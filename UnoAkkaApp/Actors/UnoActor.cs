@@ -20,9 +20,15 @@ namespace UnoAkkaApp.Actors
 
             ReceiveAsync<string>(async command =>
             {
-                logger.Info($"Receive : {command}");
+                logger.Info($"SerialWrite : {command}");
                 arduSerialPort.Write(command);
             });
+        }
+
+        protected override void PostStop()
+        {
+            arduSerialPort.Close();
+            logger.Info("UnoActor Stop");
         }
 
     }

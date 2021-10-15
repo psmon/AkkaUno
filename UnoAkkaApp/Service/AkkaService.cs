@@ -45,7 +45,8 @@ namespace UnoAkkaApp.Service
             }
 
             // 참고 : https://getakka.net/articles/actors/routers.html            
-            var router = AkkaSystem.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(workActors)), "roundRobinGroup");
+            // RandomGroup / RoundRobinGroup
+            var router = AkkaSystem.ActorOf(Props.Empty.WithRouter(new RandomGroup(workActors)), "routerGroup");
 
             // 밸브 Work : 초당 작업량을 조절                
             int timeSec = 1;
