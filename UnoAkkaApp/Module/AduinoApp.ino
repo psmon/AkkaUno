@@ -45,12 +45,6 @@ void setup() {
   
 }
 
-void displayTemperature(){
-      reading = analogRead(lm35Pin);
-      temperature = reading * 0.09;
-      //Serial.print("Current Temperature : ");
-      //Serial.println(temperature);        
-}
 
 void lampUpDown(int outPin){
   Serial.print("read :");
@@ -76,13 +70,13 @@ void lampAllDown(){
 }
 
 void displayRegister(){  
-  int curval = (analogRead(pinREG)/10)*10;
+  int curval = analogRead(pinREG) / 10;
   if(curval!=registerVal){                
-      //lcd.setCursor(0,0);      
-      //lcd.print(curval);
-      //lcd.print(" :======");
-  }  
-  registerVal = curval;
+      lcd.setCursor(0,0);      
+      lcd.print(curval);
+      lcd.print(" :======");
+      registerVal = curval;
+  }    
 }
 
 void serialLamp(){

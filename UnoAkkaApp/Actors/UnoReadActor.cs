@@ -11,11 +11,15 @@ namespace UnoAkkaApp.Actors
         private readonly ILoggingAdapter logger = Context.GetLogger();
 
         // 참고 : 리눅스의 경우 SerialPortStream 사용(현재 윈도우 지원)
-        private readonly SerialPort arduSerialPort;        
+        private readonly SerialPort arduSerialPort;
 
-        public UnoReadActor(SerialPort serialPort)
+        private readonly IActorRef throttleWork;
+
+        public UnoReadActor(SerialPort serialPort, IActorRef _throttleWork)
         {
-            arduSerialPort = serialPort;            
+            arduSerialPort = serialPort;
+
+            throttleWork = _throttleWork;
 
             ReceiveAsync<SerialRead>(async command =>
             {
@@ -26,21 +30,18 @@ namespace UnoAkkaApp.Actors
 
         protected void SerialRead()
         {
-            try
+            string readString = arduSerialPort.ReadLine();
+
+            if (readString.Contains("Speed"))
             {
-                string readString = arduSerialPort.ReadLine();
+                var speed = int.Parse(readString.Split(":")[1]);
 
-                if (readString.Contains("Speed"))
-                {
-                    logger.Info($"SerialRead : {readString}");
-                }
+                int countPerSec = (speed / 10) + 3;
 
-                this.Self.Tell(new SerialRead());
+                throttleWork.Tell(countPerSec);
             }
-            catch(Exception e)
-            {
 
-            }
+            Self.Tell(new SerialRead());
         }
 
     }

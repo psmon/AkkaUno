@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Routing;
-using AkkaDotModule.ActorUtils;
 using AkkaDotModule.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnoAkkaApp.Actors;
 using UnoAkkaApp.Model;
+using ThrottleWork = UnoAkkaApp.Actors.ThrottleWork;
 
 namespace UnoAkkaApp.Service
 {
@@ -41,10 +41,6 @@ namespace UnoAkkaApp.Service
 
             var unoActor = AkkaSystem.ActorOf(Props.Create(() => new UnoSendActor(arduSerialPort)), "unoActor");
 
-            var unoReadActor = AkkaSystem.ActorOf(Props.Create(() => new UnoReadActor(arduSerialPort)), "unoReadActor");
-
-            unoReadActor.Tell(new SerialRead());
-
             List<string> workActors = new List<string>();
 
             for (int i = 0; i < 9; i++)
@@ -57,25 +53,34 @@ namespace UnoAkkaApp.Service
 
             // 참고 : https://getakka.net/articles/actors/routers.html            
             // RandomGroup / RoundRobinGroup
-            var router = AkkaSystem.ActorOf(Props.Empty.WithRouter(new RandomGroup(workActors)), "routerGroup");
+            var router = AkkaSystem.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup(workActors)), "routerGroup");
 
             // 밸브 Work : 초당 작업량을 조절                
             int timeSec = 1;
-            int elemntPerSec = 2;
+            int elemntPerSec = 3;
             var throttleWork = AkkaSystem.ActorOf(Props.Create(() => new ThrottleWork(elemntPerSec, timeSec)), "throttleWork");
             // 밸브 작업자를 지정
             throttleWork.Tell(new SetTarget(router));
 
-            //분산처리할 100개의 샘플데이터생성
+            var unoReadActor = AkkaSystem.ActorOf(Props.Create(() => new UnoReadActor(arduSerialPort, throttleWork)), "unoReadActor");
+            unoReadActor.Tell(new SerialRead());
+
+            //분산처리할 10개의 샘플데이터생성
             List<object> batchDatas = new List<object>();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10; i++)
             {
                 batchDatas.Add(new BatchData() { Data="SomeData" });
             }
             BatchList batchList = new BatchList(batchDatas.ToImmutableList());
 
-            //100개의 데이터전송(벌크)
-            throttleWork.Tell(batchList);
+            //매5초마다 batchList 데이터 처리
+            AkkaSystem
+            .Scheduler
+            .ScheduleTellRepeatedly(
+                 TimeSpan.FromSeconds(1),    //1초뒤부터 작동
+                 TimeSpan.FromSeconds(5),    //5초마다 이벤트발생
+                 throttleWork, batchList, ActorRefs.NoSender
+             );
 
             _logger.LogInformation("Start AkkaSystem...");
 
