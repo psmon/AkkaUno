@@ -7,9 +7,11 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
 using UnoAkkaApp.Actors;
+using UnoAkkaApp.Model;
 
 namespace UnoAkkaApp.Service
 {
@@ -32,7 +34,16 @@ namespace UnoAkkaApp.Service
             // start ActorSystem                        
             AkkaSystem = ActorSystem.Create("AkkaSystem");
 
-            var unoActor = AkkaSystem.ActorOf(Props.Create(() => new UnoActor()), "unoActor");
+            var arduSerialPort = new SerialPort();
+            arduSerialPort.PortName = "COM4";   //아두이노가 연결된 시리얼 포트 번호 지정
+            arduSerialPort.BaudRate = 9600;     //시리얼 통신 속도 지정
+            arduSerialPort.Open();              //포트 오픈
+
+            var unoActor = AkkaSystem.ActorOf(Props.Create(() => new UnoSendActor(arduSerialPort)), "unoActor");
+
+            var unoReadActor = AkkaSystem.ActorOf(Props.Create(() => new UnoReadActor(arduSerialPort)), "unoReadActor");
+
+            unoReadActor.Tell(new SerialRead());
 
             List<string> workActors = new List<string>();
 

@@ -5,15 +5,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup>    
     <PackageReference Include="AkkaDotModule.Webnori" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.20" />
     <PackageReference Include="SerialPortStream" Version="2.3.1" />
     <PackageReference Include="System.IO.Ports" Version="5.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Model\" />
   </ItemGroup>
 
 </Project>

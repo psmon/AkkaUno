@@ -16,6 +16,8 @@ float temperature;
 int reading;  
 int lm35Pin = A0;
 
+int readRefresh = 10;
+
 void setup() { 
   analogReference(INTERNAL);
   Serial.begin(9600);
@@ -39,16 +41,26 @@ void setup() {
   lcd.print("hello");  
   
   MsTimer2::set(100, onTimer);
-  MsTimer2::start();  
+  MsTimer2::start();
   
 }
 
+void displayTemperature(){
+      reading = analogRead(lm35Pin);
+      temperature = reading * 0.09;
+      //Serial.print("Current Temperature : ");
+      //Serial.println(temperature);        
+}
 
 void lampUpDown(int outPin){
   Serial.print("read :");
   Serial.println(outPin);
   int pinNum = outPin+1;    
   digitalWrite(outPin+1, HIGH);
+
+  //delay(100);
+  //digitalWrite(outPin, LOW);
+  //delay(100);
 }
 
 void lampAllDown(){
@@ -64,17 +76,18 @@ void lampAllDown(){
 }
 
 void displayRegister(){  
-  int curval = (analogRead(pinREG)/100)*100;
-  if(curval!=registerVal){            
-      lcd.setCursor(0,0);      
-      lcd.print(curval);
-      lcd.print(" :======");      
+  int curval = (analogRead(pinREG)/10)*10;
+  if(curval!=registerVal){                
+      //lcd.setCursor(0,0);      
+      //lcd.print(curval);
+      //lcd.print(" :======");
   }  
   registerVal = curval;
 }
 
 void serialLamp(){
   char input = Serial.read();
+  readRefresh--;
 
   switch(input){
     case '1':
@@ -108,12 +121,22 @@ void serialLamp(){
       lampAllDown();
       break;
   }
+
+  if(readRefresh<0){
+    readRefresh = 10;
+    Serial.print("Speed:");
+    Serial.println(registerVal);
+
+    //lcd.setCursor(0,0);
+    //lcd.print(registerVal);
+    //lcd.print(" :======");
+  }  
 }
 
 void loop() {
-  displayRegister();
+  displayRegister();    
 }
 
 void onTimer(){
-  serialLamp();
+  serialLamp();  
 }
